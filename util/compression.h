@@ -28,6 +28,7 @@
 #include "util/coding.h"
 #include "util/compression_context_cache.h"
 #include "util/string_util.h"
+#include "qatseqprod.h"
 
 #ifdef SNAPPY
 #include <snappy.h>
@@ -369,13 +370,29 @@ class CompressionContext {
  private:
 #if defined(ZSTD) && (ZSTD_VERSION_NUMBER >= 500)
   ZSTD_CCtx* zstd_ctx_ = nullptr;
+  void *sequenceProducerState = nullptr;
 
   ZSTD_CCtx* CreateZSTDContext() {
+    ZSTD_CCtx *zstdctx = nullptr;
 #ifdef ROCKSDB_ZSTD_CUSTOM_MEM
-    return ZSTD_createCCtx_advanced(port::GetJeZstdAllocationOverrides());
+    zstdctx = ZSTD_createCCtx_advanced(port::GetJeZstdAllocationOverrides());
 #else   // ROCKSDB_ZSTD_CUSTOM_MEM
-    return ZSTD_createCCtx();
+    zstdctx = ZSTD_createCCtx();
 #endif  // ROCKSDB_ZSTD_CUSTOM_MEM
+    /* Start QAT device, start QAT device at any
+    time before compression job started */
+    QZSTD_startQatDevice();
+    /* Create sequence producer state for QAT sequence producer */
+    sequenceProducerState = QZSTD_createSeqProdState();
+    /* register qatSequenceProducer */
+    ZSTD_registerSequenceProducer(
+        zstdctx,
+        sequenceProducerState,
+        qatSequenceProducer
+    );
+    /* Enable sequence producer fallback */
+    ZSTD_CCtx_setParameter(zstdctx, ZSTD_c_enableSeqProducerFallback, 1);
+    return zstdctx;
   }
 
   void CreateNativeContext(CompressionType type, int level, bool checksum) {
@@ -432,7 +449,16 @@ class CompressionContext {
                               const CompressionOptions& options) {
     CreateNativeContext(type, options.level, options.checksum);
   }
-  ~CompressionContext() { DestroyNativeContext(); }
+  ~CompressionContext() { 
+    DestroyNativeContext();
+    /* Free sequence producer state */
+    QZSTD_freeSeqProdState(sequenceProducerState);
+    /* Please call QZSTD_stopQatDevice before
+      QAT is no longer used or the process exits */
+    //QZSTD_stopQatDevice();
+  }
+
+
   CompressionContext(const CompressionContext&) = delete;
   CompressionContext& operator=(const CompressionContext&) = delete;
 };

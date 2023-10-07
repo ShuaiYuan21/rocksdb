@@ -10,10 +10,11 @@ BASH_EXISTS := $(shell which bash)
 SHELL := $(shell which bash)
 include common.mk
 
+ZSTD_PLUGIN_LIB = /home/shuai/applications.qat.shims.zstandard.qatzstdplugin/src
 CLEAN_FILES = # deliberately empty, so we can append below.
 CFLAGS += ${EXTRA_CFLAGS}
 CXXFLAGS += ${EXTRA_CXXFLAGS}
-LDFLAGS += $(EXTRA_LDFLAGS)
+LDFLAGS += $(EXTRA_LDFLAGS) $(ZSTD_PLUGIN_LIB)/libqatseqprod.a -I$(ZSTD_PLUGIN_LIB) -lqat_s -lusdm_drv_s -Wl,-rpath,$(ICP_ROOT)/build -L$(ICP_ROOT)/build
 MACHINE ?= $(shell uname -m)
 ARFLAGS = ${EXTRA_ARFLAGS} rs
 STRIPFLAGS = -S -x
