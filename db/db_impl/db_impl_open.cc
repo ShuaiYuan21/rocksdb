@@ -27,6 +27,7 @@
 #include "util/rate_limiter_impl.h"
 #include "util/string_util.h"
 #include "util/udt_util.h"
+#include "qatseqprod.h"
 
 namespace ROCKSDB_NAMESPACE {
 Options SanitizeOptions(const std::string& dbname, const Options& src,
@@ -2257,6 +2258,8 @@ Status DBImpl::Open(const DBOptions& db_options, const std::string& dbname,
     delete impl;
     *dbptr = nullptr;
   }
+  // Start QAT HW
+  QZSTD_startQatDevice();
   return s;
 }
 }  // namespace ROCKSDB_NAMESPACE

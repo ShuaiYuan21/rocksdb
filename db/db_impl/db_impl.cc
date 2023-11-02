@@ -108,6 +108,7 @@
 #include "util/string_util.h"
 #include "util/udt_util.h"
 #include "utilities/trace/replayer_impl.h"
+#include "qatseqprod.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -5005,6 +5006,8 @@ Status DBImpl::Close() {
 
   closing_status_ = CloseImpl();
   closed_ = true;
+  // Stop QAT HW
+  QZSTD_stopQatDevice();
   return closing_status_;
 }
 

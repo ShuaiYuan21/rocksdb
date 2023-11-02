@@ -381,7 +381,7 @@ class CompressionContext {
 #endif  // ROCKSDB_ZSTD_CUSTOM_MEM
     /* Start QAT device, start QAT device at any
     time before compression job started */
-    QZSTD_startQatDevice();
+    //QZSTD_startQatDevice();
     /* Create sequence producer state for QAT sequence producer */
     sequenceProducerState = QZSTD_createSeqProdState();
     /* register qatSequenceProducer */
